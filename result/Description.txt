@@ -1,0 +1,1 @@
+This file is used to store results, including checkpoint, training and test log, classification metrics and configs.

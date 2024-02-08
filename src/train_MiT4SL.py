@@ -92,6 +92,7 @@ def compute_accuracy(target,pred, pred_edge):
 def train(args,Context_MiT4SL, train_loader, optimizer_model,sldata,num_train_node,ori_train_data,device):
     '''
     Train MiT4SL
+    
     '''
     criterion = nn.CrossEntropyLoss()
     optimizer_model=optimizer_model
@@ -103,8 +104,6 @@ def train(args,Context_MiT4SL, train_loader, optimizer_model,sldata,num_train_no
     aupr_sum=0
     f1_sum=0
     bacc_sum=0
-   
-   
     loss_cl=0
     loss_mse=0
     infoloss=InfoNCE()
@@ -166,12 +165,6 @@ def train(args,Context_MiT4SL, train_loader, optimizer_model,sldata,num_train_no
        
         log = {
             'loss': loss_sum/(step+1),
-            # 'auc':aucu_sum/(step+1),
-            # 'aupr':aupr_sum/(step+1),
-            # 'f1':f1_sum/(step+1),
-            # 'bacc':bacc_sum/(step+1),
-      
-           
         }
    
     return log
@@ -268,7 +261,7 @@ def main():
     parser.add_argument('--Use_omics', default=0,type=int)
     parser.add_argument('--tpm_value', default=400,type=int)
     parser.add_argument('--act', default='KGSeq_finalCL',type=str,help='KGSeq_finalCL')
-    parser.add_argument('--cv', default='C2',type=str)
+    parser.add_argument('--cv', default='C2',type=str,help='C2 means the cell_line_adapted')
     parser.add_argument('--task', default='GI_score',type=str)
     parser.add_argument('--cell', default='Jurkat_A375',type=str)
     parser.add_argument('--node_type', default='gene/protein',type=str)
@@ -543,10 +536,8 @@ def main():
     eval_metric_folds.loc[6,'bacc']=round(eval_metric_folds.loc[:5,'bacc'].std(),4)
     
     
-    if args.do_low_data:
-        eval_metric_folds.to_csv(args.Save_model_path+'/'+args.cv+'_'+str(args.train_data_ratio)+'_'+str(args.lr)+'_'+str(args.epochs)+'_result_eval.csv',index=False)
-    else:
-        eval_metric_folds.to_csv(args.Save_model_path+'/'+args.cv+'_'+str(args.lr)+'_'+str(args.epochs)+'_result_eval.csv',index=False)
+    
+    eval_metric_folds.to_csv(args.Save_model_path+'/'+args.cv+'_'+str(args.lr)+'_'+str(args.epochs)+'_result_eval.csv',index=False)
     
 
             
