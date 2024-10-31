@@ -15,7 +15,8 @@ MiT4SL is the first machine learning model for cross cell line prediction of syn
 ```
 MiT4SL
 │  LICENSE                
-│  MiT4SL_overview.png
+│  fig_intro.png
+|  MiT4SL_overview.png
 │  README.md                     # README file
 │  
 ├─data                      
