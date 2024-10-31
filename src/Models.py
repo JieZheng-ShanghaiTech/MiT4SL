@@ -1,13 +1,11 @@
 import torch
 import torch.nn.functional as F
-# from ogb.nodeproppred import Evaluator, PygNodePropPredDataset
 from torch.nn import LayerNorm, Linear, ReLU
 from tqdm import tqdm
 from torch_geometric.loader import DataLoader
 from torch_geometric.nn import DeepGCNLayer, GENConv,HGTConv
 import pandas as pd
 import numpy as np
-from torch_geometric.explain import Explainer, GNNExplainer
 
 class MiT4SL(torch.nn.Module):
     def __init__(self,kgdata,cell_ppidata,proteinseq_data,cell_line_proteins,
