@@ -9,7 +9,7 @@ import torch.nn.functional as F
 import torch.optim as optim
 from tqdm import tqdm
 import numpy as np
-from models import *
+from src.model import *
 import pandas as pd
 from util import *
 import pickle
