@@ -1,13 +1,15 @@
 import torch
 import torch.nn.functional as F
+# from ogb.nodeproppred import Evaluator, PygNodePropPredDataset
 from torch.nn import LayerNorm, Linear, ReLU
 from tqdm import tqdm
 from torch_geometric.loader import DataLoader
 from torch_geometric.nn import DeepGCNLayer, GENConv,HGTConv
 import pandas as pd
 import numpy as np
+from torch_geometric.explain import Explainer, GNNExplainer
 
-class ContextMiT4SL(torch.nn.Module):
+class MiT4SL(torch.nn.Module):
     def __init__(self,kgdata,cell_ppidata,proteinseq_data,cell_line_proteins,
                  KG_hidden_channels,KG_out_channels, KG_num_heads, KG_num_layers,
                  CellLineGraph_hidden_channels, CellLineGraph_num_layers,
@@ -29,11 +31,14 @@ class ContextMiT4SL(torch.nn.Module):
         self.cn_protein=cn_protein
         self.device=device
         self.linear_combine=torch.nn.Linear(2*self.emb_dim,2*self.emb_dim).to(device)
-        self.Linear_classifier_both=torch.nn.Sequential(torch.nn.Linear(self.emb_dim*6,self.emb_dim),torch.nn.ReLU(),torch.nn.Linear(self.emb_dim,2)).to(device)
+        self.Linear_classifier_both=torch.nn.Sequential(torch.nn.Linear(self.emb_dim*6,4*self.emb_dim),torch.nn.ReLU(),torch.nn.Linear(4*self.emb_dim,2*self.emb_dim),torch.nn.ReLU(),torch.nn.Linear(2*self.emb_dim,2)).to(device)
         self.Linear_classifier_both_ablation=torch.nn.Sequential(torch.nn.Linear(self.emb_dim*5,self.emb_dim),torch.nn.ReLU(),torch.nn.Linear(self.emb_dim,2)).to(device)
+        self.Linear_classifier_nocell=torch.nn.Sequential(torch.nn.Linear(self.emb_dim*4,self.emb_dim),torch.nn.ReLU(),torch.nn.Linear(self.emb_dim,2)).to(device)
         self.Linear_classifier_singleall=torch.nn.Sequential(torch.nn.Linear(self.emb_dim*4,self.emb_dim),torch.nn.ReLU(),torch.nn.Linear(self.emb_dim,2)).to(device)
+        self.Linear_classifier_singleseq=torch.nn.Sequential(torch.nn.Linear(self.emb_dim*5,self.emb_dim),torch.nn.ReLU(),torch.nn.Linear(self.emb_dim,2)).to(device)
         self.Linear_classifier_single=torch.nn.Sequential(torch.nn.Linear(self.emb_dim*4,self.emb_dim),torch.nn.ReLU(),torch.nn.Linear(self.emb_dim,2)).to(device)
         self.Linear_classifier_single_ablation=torch.nn.Sequential(torch.nn.Linear(self.emb_dim*3,self.emb_dim),torch.nn.ReLU(),torch.nn.Linear(self.emb_dim,2)).to(device)
+        self.Linear_classifier_single_ablationcell=torch.nn.Sequential(torch.nn.Linear(self.emb_dim*2,self.emb_dim),torch.nn.ReLU(),torch.nn.Linear(self.emb_dim,2)).to(device)
         self.Linear_classifier_omics=torch.nn.Sequential(torch.nn.Linear(self.emb_dim*6,self.emb_dim),torch.nn.ReLU(),torch.nn.Linear(self.emb_dim,2)).to(device)
         self.Linear_classifier_all=torch.nn.Sequential(torch.nn.Linear(384,2*self.emb_dim),torch.nn.ReLU(),torch.nn.Linear(2*self.emb_dim,self.emb_dim),torch.nn.ReLU(),torch.nn.Linear(self.emb_dim,2)).to(device)
         
@@ -42,8 +47,7 @@ class ContextMiT4SL(torch.nn.Module):
         else:
             print('Do not use KG encoder.')
         if Use_cellnx:
-            self.CellGraph_encoder=CellLineGraphEncoder(cell_ppidata,CellLineGraph_hidden_channels,self.emb_dim,CellLineGraph_num_layers).to(device)
-           
+            self.CellGraph_encoder=CellLineGraphEncoder(cell_ppidata,CellLineGraph_hidden_channels,self.emb_dim,CellLineGraph_num_layers).to(device)  
         else:
             print('Do not use CellGraph encoder.')
         if Use_seq:
@@ -51,82 +55,53 @@ class ContextMiT4SL(torch.nn.Module):
         else:
             print('Do not use Sequence encoder.')
        
-        
-
-    def forward(self,sldata,act_operation,batch,batch_size,ori_data): 
+    def forward(self,sldata,batch,batch_size,ori_data): 
         nodea,nodeb=ori_data[0],ori_data[1]
         cell_id=ori_data[2]
 
         if self.Use_kg:
             kgemb_a,kgemb_b=self.KG_encoder(batch.x_dict,batch.edge_index_dict,batch,batch_size,sldata)
-           
+
         if self.Use_seq:
             sequence_emb,cellseq_emb=self.Sequence_encoder(self.cell_line_proteins,self.proteinseq_data,self.device)
             seqemb_a=torch.stack([sequence_emb[i] for i in nodea.values])
             seqemb_b=torch.stack([sequence_emb[i] for i in nodeb.values])
+
         if self.Use_cellnx:
             cellgraph_emb= self.CellGraph_encoder(self.cell_ppidata,self.device)
             cellgraph_emb=torch.stack(cellgraph_emb).squeeze(1)
 
-
-        if act_operation=='KGSeq_finalCL':
-            '''
-            To optimize MiT4SL, we feed the triplet representation into the SL predictor to estimate the SL score
-            and compute two novel regularizations to enhance the triplet representation.
-            '''
-            cellemb_nx=cellgraph_emb[cell_id.values].squeeze(1)
-            cellemb_seq=cellseq_emb[cell_id.values].squeeze(1)
-            cell_emb=torch.cat((cellemb_nx,cellemb_seq),dim=1)
-            # Enhancing triplet representations via contrastive learning 
-            nodea_emb=torch.stack((kgemb_a,seqemb_a),dim=0)
-            nodeb_emb=torch.stack((kgemb_b,seqemb_b),dim=0)
-            sample_a_indices1 = torch.randint(0, 2, (1,))
-            sample_b_indices1 = torch.randint(0, 2, (1,))
-            final_emba1=nodea_emb[sample_a_indices1].squeeze(0)
-            final_embb1=nodeb_emb[sample_b_indices1].squeeze(0)
-            edge_emb_CL1=torch.cat((final_emba1,final_embb1),dim=1)
-            tri_emb1=torch.cat((edge_emb_CL1,cell_emb),dim=1)
-            sample_a_indices2 = torch.randint(0, 2, (1,))
-            sample_b_indices2 = torch.randint(0, 2, (1,))
-            final_emba2=nodea_emb[sample_a_indices2].squeeze(0)
-            final_embb2=nodeb_emb[sample_b_indices2].squeeze(0)
-            edge_emb_CL2=torch.cat((final_emba2,final_embb2),dim=1)
-            tri_emb2=torch.cat((edge_emb_CL2,cell_emb),dim=1)
-            #---Cell-line-adapted synthetic lethality prediction---
-            final_emba=torch.cat((kgemb_a,seqemb_a),dim=1)
-            final_embb=torch.cat((kgemb_b,seqemb_b),dim=1)
-            edge_emb=torch.cat((final_emba,final_embb),dim=1)
-            tri_emb=torch.cat((edge_emb,cell_emb),dim=1)
-            prediction=self.Linear_classifier_both(tri_emb)
-            kgemb=torch.cat((kgemb_a,kgemb_b,cell_emb),dim=1)
-            seqemb=torch.cat((seqemb_a,seqemb_b,cell_emb),dim=1)
-            # ---Decision-level regularization---
-            prediction_kg=self.Linear_classifier_single(kgemb)
-            prediction_seq=self.Linear_classifier_single(seqemb)
-            avergae_prediction=torch.sigmoid((prediction_kg+prediction_seq)/2)
-            return tri_emb1,tri_emb2,prediction,avergae_prediction
-         
-        return prediction
-
-
+        cellemb_nx=cellgraph_emb[cell_id.values].squeeze(1)
+        cellemb_seq=cellseq_emb[cell_id.values].squeeze(1)
+        cell_emb=torch.cat((cellemb_nx,cellemb_seq),dim=1) 
+        nodea_emb=torch.stack((kgemb_a,seqemb_a),dim=0)
+        nodeb_emb=torch.stack((kgemb_b,seqemb_b),dim=0)
+        sample_a_indices1 = torch.randint(0, 2, (1,))
+        sample_b_indices1 = torch.randint(0, 2, (1,))
+        final_emba1=nodea_emb[sample_a_indices1].squeeze(0)
+        final_embb1=nodeb_emb[sample_b_indices1].squeeze(0)
+        edge_emb_CL1=torch.cat((final_emba1,final_embb1),dim=1)
+        tri_emb1=torch.cat((edge_emb_CL1,cell_emb),dim=1)
+        sample_a_indices2 = torch.randint(0, 2, (1,))
+        sample_b_indices2 = torch.randint(0, 2, (1,))
+        final_emba2=nodea_emb[sample_a_indices2].squeeze(0)
+        final_embb2=nodeb_emb[sample_b_indices2].squeeze(0)
+        edge_emb_CL2=torch.cat((final_emba2,final_embb2),dim=1)
+        tri_emb2=torch.cat((edge_emb_CL2,cell_emb),dim=1)
+        final_emba=torch.cat((kgemb_a,seqemb_a),dim=1)
+        final_embb=torch.cat((kgemb_b,seqemb_b),dim=1)
+        edge_emb=torch.cat((final_emba,final_embb),dim=1)
+        tri_emb=torch.cat((edge_emb,cell_emb),dim=1)
+        prediction=self.Linear_classifier_both(tri_emb)
+        kgemb=torch.cat((kgemb_a,kgemb_b,cell_emb),dim=1)
+        seqemb=torch.cat((seqemb_a,seqemb_b,cell_emb),dim=1)
+        prediction_kg=self.Linear_classifier_single(kgemb)
+        prediction_seq=self.Linear_classifier_single(seqemb)
+        avergae_prediction=torch.sigmoid((prediction_kg+prediction_seq)/2)
+        return tri_emb,tri_emb1,tri_emb2,prediction,avergae_prediction
         
-
 
 class KGEncoder(torch.nn.Module):
-    '''
-    This Encoder is used to produce the embeddings of genes based on a BKG. 
-    
-    Args:
-        data: kgdata.pkl in the ./data.
-   
-        in_channels (int or Dict[str, int]): Size of each input sample of every
-            node type, or :obj:`-1` to derive the size from the first input(s)
-            to the forward method.
-        out_channels (int): Size of each output sample.
-        
-        heads (int, optional): Number of multi-head-attentions.
-            (default: :obj:`4`)
-    '''
     def __init__(self, data,hidden_channels, out_channels, num_heads, num_layers):
         super().__init__()
 
@@ -152,12 +127,13 @@ class KGEncoder(torch.nn.Module):
         # output node representation 
         for node_type in x_dict.keys():
             x_dict[node_type]=self.lin(x_dict[node_type])
+        
+
         node_rep=x_dict['gene/protein']
         node_set=pd.DataFrame(list(batch['gene/protein'].n_id[:batch_size].squeeze().detach().cpu().numpy()))
         node_set.drop_duplicates(inplace=True,keep='first')
         node_set[1]=range(node_set.shape[0])
         node_map=dict(zip(node_set[0],node_set[1]))
-    
         prediction_edge=sldata[[0,1]]
         nodea,nodeb=prediction_edge[0],prediction_edge[1]
         nodea=nodea.map(node_map)
@@ -171,19 +147,6 @@ class KGEncoder(torch.nn.Module):
 
         
 class CellLineGraphEncoder(torch.nn.Module):
-    '''
-    This Encoder is used to produce the embeddings of proteins based on a sub-ppi graph specific to each cell lines. 
-    Args:
-        hidden_channels (int or tuple): Size of each input sample, or :obj:`-1` to
-            derive the size from the first input(s) to the forward method.
-            A tuple corresponds to the sizes of source and target
-            dimensionalities.
-        out_channels (int): Size of each output sample (default: :obj:`64`).
-        num_layers (int, optional): The number of MLP layers.
-            (default: :obj:`15`).
-        
-    '''
-   
     def __init__(self,data, hidden_channels, num_layers,out_channels):
         super().__init__()
 
@@ -222,43 +185,20 @@ class CellLineGraphEncoder(torch.nn.Module):
             concated_cellemb=torch.cat((average_pooled_emb,max_pooled_emb),dim=1)
             concated_cellemb=self.lin(concated_cellemb)
             cellnx_emb.append(concated_cellemb)
-
-        # return the graph-based embeddings of each cell lines 
         return cellnx_emb
     
 
-
-
-
-
-
-
-
 class SequenceEncoder(torch.nn.Module):
-    '''
-    This Encoder is used to produce the embeddings of proteins based on protein-sequneces. 
-    Args:
-        hidden_channels (int or tuple): Size of each input sample, or :obj:`-1` to
-            derive the size from the first input(s) to the forward method.
-            A tuple corresponds to the sizes of source and target
-            dimensionalities.
-        out_channels (int): Size of each output sample (default: :obj:`64`).
-        
-        
-    '''
     def __init__(self,hidden_channels, out_channels):
         super().__init__()
         self.Linear_seqcell=torch.nn.Sequential(torch.nn.Linear(1280,hidden_channels),torch.nn.Linear(hidden_channels,out_channels))
         self.Linear_seqprotein=torch.nn.Sequential(torch.nn.Linear(1280,hidden_channels),torch.nn.Linear(hidden_channels,out_channels))
     def forward(self,cell_line_protein,protein_emb,device):
-        # cell_line_protein: the gene set specific to the cell line
-        # protein_emb: the embeddings of proteins is produced by esm2.
         cellseq_emb=[]
-        for i in range(3):
+        for i in range(cell_line_protein['cell_id'].max()+1):
             cell_data=cell_line_protein[cell_line_protein['cell_id']==i]
             cell_proteins=set(cell_data['primekg_index'].values)
             cell_proteinsemb=torch.stack([protein_emb[i] for i in cell_proteins])
-
             average_pooled_emb =F.adaptive_avg_pool2d(cell_proteinsemb.unsqueeze(0), (1, 640)).squeeze(0)
             max_pooled_emb=F.adaptive_max_pool2d(cell_proteinsemb.unsqueeze(0), (1,640)).squeeze(0)
            
@@ -269,34 +209,8 @@ class SequenceEncoder(torch.nn.Module):
         proteinseq={}
         for k in protein_emb:
             proteinseq[k]=self.Linear_seqprotein(protein_emb[k].to(device))
-        # return the graph-based embeddings of each cell lines 
         return proteinseq,torch.stack(cellseq_emb)
         
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    

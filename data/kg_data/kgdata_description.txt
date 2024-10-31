@@ -1,0 +1,5 @@
+===Notice===
+
+Due to the limitation of GitHub's file size (< 100mb), 
+we upload the BKG data (`kgdata.pkl`) into Google Driver (https://drive.google.com/drive/folders/12exswZrjKjgrG7WNO3lgy1K8GKLztG02?usp=sharing). 
+Please place it in the path of `./data/kg_data` before running.

@@ -1,0 +1,22 @@
+SOLVER:
+  DEVICE: 1
+  EPOCHS: 20
+  LR: 1e-3
+  BETA1: 0.2
+  BETA2: 0.2
+  SCENARIO: 'cell_line_adapted'
+  CELL: 'Multi_5_to_A549'
+
+
+Cell_Line:
+  NUM_LAYERS: 24
+
+
+KG_SAMPLER:
+  SAMPLE_NODES: 512
+  SAMPLE_LAYERS: 8
+
+
+
+
+

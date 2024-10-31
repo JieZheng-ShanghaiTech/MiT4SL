@@ -1,0 +1,93 @@
+from yacs.config import CfgNode as CN
+
+_C=CN()
+
+
+# BKG encoder
+_C.KG=CN()
+_C.KG.NAME='PrimeKG'
+_C.KG.USE_KG=True
+_C.KG.NUM_LAYERS=3
+_C.KG.EMB_DIM=64
+_C.KG.HIDEEN_DIM=64
+_C.KG.NUM_HEADS=4
+
+#BKG sampler
+_C.KG_SAMPLER=CN()
+_C.KG_SAMPLER.SAMPLE_NODES=512
+_C.KG_SAMPLER.SAMPLE_LAYERS=4
+
+# Protein sequence encoder
+_C.ProteinSeq=CN()
+_C.ProteinSeq.NAME='ESM2'
+_C.ProteinSeq.USE_Seq=True
+_C.ProteinSeq.HIDDEN_DIM=640
+_C.ProteinSeq.OUT_DIM=64
+
+# Cell line encoder
+_C.Cell_Line=CN()
+_C.Cell_Line.USE_Cell=True
+_C.Cell_Line.HIDDEN_DIM=64
+_C.Cell_Line.EMB_DIM=64
+_C.Cell_Line.NUM_LAYERS=20
+
+
+
+#MLP  SL classifer
+_C.MLP=CN()
+_C.MLP.SL_PREDICTOR=CN()
+_C.MLP.SL_PREDICTOR.INPUT_DIM=384
+_C.MLP.SL_PREDICTOR.HIDDEN_DIM=64
+_C.MLP.SL_PREDICTOR.OUT_DIM=2
+
+
+#MLP DL classifer
+_C.MLP.DL_PREDICTOR=CN()
+_C.MLP.DL_PREDICTOR.INPUT_DIM=256
+_C.MLP.DL_PREDICTOR.HIDDEN_DIM=64
+_C.MLP.DL_PREDICTOR.OUT_DIM=2
+
+
+
+#SOLVER
+_C.SOLVER=CN()
+_C.SOLVER.DEVICE=0
+_C.SOLVER.EPOCHS=20
+_C.SOLVER.BATCH_POS_NEG_RATIO=1
+_C.SOLVER.USE_DATA='KG_Seq_Cell_Line'
+_C.SOLVER.SCENARIO='Cell_line_adapted'
+_C.SOLVER.BATCH_SIZE=512
+_C.SOLVER.CELL='Multi_5_to_A549'
+_C.SOLVER.LR=1e-3
+_C.SOLVER.DA_LR=1e-3
+_C.SOLVER.BETA1=0.2
+_C.SOLVER.BETA2=0.2
+_C.SOLVER.NUM_WORKERS=16
+_C.SOLVER.SAVE_CHEACKPOINTS=10
+_C.SOLVER.KG_DATAPATH='./data/kg_data/kgdata.pkl'
+_C.SOLVER.KG_NODE_DICT='./data/kg_data/node_index_dic.json'
+_C.SOLVER.CELLNX_DATAPATH='./data/cell_data/Multi_6_cell_lines_subgraph.pkl'
+_C.SOLVER.PROTEINSeq_DATAPATH='./data/seq_data/protein_sequence_embedding.pkl'
+_C.SOLVER.CELLPROTEIN_DATAPATH="./data/cell_data/Multi_6_cell_lines_proteins.csv"
+_C.SOLVER.TASK_DATAPATH='./data/sl_data/Adapted'
+_C.SOLVER.NODE_TYPE='gene/protein'
+_C.SOLVER.REPEAT_EXP_SEED=42
+_C.SOLVER.STOP_COUNTS=1
+
+#Scheduler
+_C.SCHEDULER=CN()
+_C.SCHEDULER.USE_SCHEDULER=True
+_C.SCHEDULER.STEP_SIZE=5
+_C.SCHEDULER.GAMMA=0.1
+
+
+# RESULT 
+_C.RESULT=CN()
+_C.RESULT.SAVE_MODEL=True
+_C.RESULT.SAVE_CHEACKPOINTS_STEP=5
+_C.RESULT.LOG_STEPS=1
+_C.RESULT.SAVE_PATH="./result"
+
+
+def get_cfg_defaults():
+    return _C.clone()
