@@ -7,7 +7,7 @@ import logging
 import os
 import pickle
 from torch_geometric.loader import HGTLoader
-from sklearn.metrics import roc_auc_score,f1_score,precision_recall_curve,cohen_kappa_score,balanced_accuracy_score,precision_score,accuracy_score,recall_score,average_precision_score
+from sklearn.metrics import roc_auc_score,balanced_accuracy_score,average_precision_score
 
 
 def Downstream_data_preprocess_cell(Task_data_path,Cell,node_type_dict):
@@ -159,12 +159,7 @@ def set_logger(args):
     console.setFormatter(formatter) 
     logging.getLogger('').addHandler(console) 
 
-def log_metrics(mode, step, metrics):
-    '''
-    Print the evaluation logs
-    '''
-    for metric in metrics:
-        logging.info('%s %s at epoch %d: %f' % (mode,metric,step, metrics[metric]))
+
 
 
 def compute_accuracy(target,pred, pred_edge):
