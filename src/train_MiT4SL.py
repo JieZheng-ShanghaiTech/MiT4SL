@@ -9,7 +9,7 @@ import torch.nn.functional as F
 import torch.optim as optim
 from tqdm import tqdm
 import numpy as np
-from src.model import *
+from model import *
 import pandas as pd
 from util import *
 import pickle
@@ -28,7 +28,7 @@ def train(cfg,epoch,context_mit4sl, train_loader, optimizer_model,sldata,num_tra
     optimizer_model=optimizer_model
     context_mit4sl.train()
     batch_size=num_train_node
-    loss_sum,aucu_sum,aupr_sum,bacc_sum,loss_cl,loss_mse = 0,0,0,0,0,0
+    loss_sum,loss_cl,loss_mse = 0,0,0
     infoloss=InfoNCE()
     mseloss = nn.MSELoss()
 
@@ -65,25 +65,15 @@ def train(cfg,epoch,context_mit4sl, train_loader, optimizer_model,sldata,num_tra
 
         loss = criterion(all_prediction_result,all_prediction_label.long())
         loss+=cfg.SOLVER.BETA1*loss_cl+cfg.SOLVER.BETA2*loss_mse
-        all_prediction=torch.max(all_prediction_result.detach(),dim=1)[1]
-        aucu,aupr,bacc=compute_accuracy(all_prediction_label,all_prediction,all_prediction_result)
         loss.backward()
         optimizer_model.step()
         scheduler_model.step()
         loss_sum += float(loss.cpu().item())
-        aucu_sum+=float(aucu)
-        aupr_sum+=float(aupr)
-        bacc_sum+=float(bacc)
-        # log = {
-        #     'loss': loss_sum/(step+1),
-        #     'auc':aucu_sum/(step+1),
-        #     'aupr':aupr_sum/(step+1),
-        #     'bacc':bacc_sum/(step+1), 
-        # }
-        log = {
-            'loss': loss_sum/(step+1),
-        }
-   
+        
+    log = {
+        'loss': loss_sum/(step+1),
+    }
+
     return log
 
 
@@ -91,8 +81,8 @@ def train(cfg,epoch,context_mit4sl, train_loader, optimizer_model,sldata,num_tra
 
 def eval(cfg,context_mit4sl,val_loader,test_loader,valdata,sldata,num_val_node,num_test_node,ori_val_data,ori_test_data,device):
     context_mit4sl.eval()
-   
-    aucu_sum,aupr_sum,bacc_sum=0,0,0
+    all_prediction_label, all_prediction_result = [], []
+    # aucu_sum,aupr_sum,bacc_sum=0,0,0
     stop_counts = 0
     best_valid_aupr = 0
     best_test_aucu,best_test_aupr,best_test_bacc = 0,0,0
@@ -102,49 +92,49 @@ def eval(cfg,context_mit4sl,val_loader,test_loader,valdata,sldata,num_val_node,n
         for step,batch in enumerate(val_loader):
             batch = batch.to(device)
             prediction_label=valdata[3]
-            
             _,_,_,prediction_result,_=context_mit4sl(valdata,batch,batch_size,ori_val_data)
-            all_prediction_label=prediction_label
-            all_prediction_result=prediction_result
-            all_prediction=torch.max(all_prediction_result.detach(),dim=1)[1]
-            all_prediction_label=torch.tensor(all_prediction_label.values).to(device)
-            valid_aucu,valid_aupr,valid_bacc=compute_accuracy(all_prediction_label,all_prediction,all_prediction_result)
-            valid_log={
-                'valid_aupr':valid_aupr, 
-            }
+            all_prediction_label.append(torch.tensor(prediction_label.values).to(device))
+            all_prediction_result.append(prediction_result)
+        all_prediction_label = torch.cat(all_prediction_label)
+        all_prediction_result = torch.cat(all_prediction_result)
+        all_prediction=torch.max(all_prediction_result.detach(),dim=1)[1]
+        all_prediction_label=all_prediction_label.to(device)
+        valid_aucu,valid_aupr,valid_bacc=compute_accuracy(all_prediction_label,all_prediction,all_prediction_result)
+        valid_log={
+            'valid_aupr':valid_aupr, 
+        }
+
+
     with torch.no_grad():
+        all_prediction_label, all_prediction_result = [], []
         batch_size=num_test_node
         for step,batch in enumerate(test_loader):
             batch = batch.to(device)
             prediction_label=sldata[3]
             _,_,_,prediction_result,_=context_mit4sl(sldata,batch,batch_size,ori_test_data)
-            all_prediction_label=prediction_label
-            all_prediction_result=prediction_result
-            all_prediction=torch.max(all_prediction_result.detach(),dim=1)[1]
-            all_prediction_label=torch.tensor(all_prediction_label.values).to(device)
-            aucu,aupr,bacc=compute_accuracy(all_prediction_label,all_prediction,all_prediction_result)
+            all_prediction_label.append(torch.tensor(prediction_label.values).to(device))
+            all_prediction_result.append(prediction_result)
+        all_prediction_label = torch.cat(all_prediction_label)
+        all_prediction_result = torch.cat(all_prediction_result)
+        all_prediction=torch.max(all_prediction_result.detach(),dim=1)[1]
+        all_prediction_label=all_prediction_label.to(device)
+        aucu,aupr,bacc=compute_accuracy(all_prediction_label,all_prediction,all_prediction_result)
         
-            if valid_aupr > best_valid_aupr:
-                aucu_sum+=float(aucu)
-                aupr_sum+=float(aupr)
-                bacc_sum+=float(bacc)
-                best_valid_aupr = valid_aupr
-                best_test_aucu=aucu_sum/(step+1)
-                best_test_aupr = aupr_sum/(step+1)
-                best_test_bacc=bacc_sum/(step+1)
-                log = {
-                'auc':best_test_aucu,
-                'aupr':best_test_aupr,
-                'bacc':best_test_bacc,
-            }
-                stop_counts = 0
-            else:
-                stop_counts += 1
-            if (stop_counts == cfg.SOLVER.STOP_COUNTS):
-                print('Early stopped.')
-                break
-                
-            
+        if valid_aupr > best_valid_aupr:
+            best_valid_aupr = valid_aupr
+            best_test_aucu=aucu
+            best_test_aupr = aupr
+            best_test_bacc=bacc
+            log = {
+            'auc':best_test_aucu,
+            'aupr':best_test_aupr,
+            'bacc':best_test_bacc,
+        }
+            stop_counts = 0
+        else:
+            stop_counts += 1
+        if (stop_counts == cfg.SOLVER.STOP_COUNTS):
+            print('Early stopped.')
       
         return best_test_aucu,best_test_aupr,best_test_bacc,valid_log,log
         
