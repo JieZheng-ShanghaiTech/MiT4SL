@@ -202,7 +202,7 @@ def main():
         optimizer_model = optim.Adam(context_mit4sl.parameters(), lr=cfg.SOLVER.LR, weight_decay=0)
     
   
-        logging.info('Ramdomly Initializing Context_LukePi Model...')  
+        logging.info('Ramdomly Initializing MiT4SL Model...')  
         init_step = 0
         step = init_step 
         
