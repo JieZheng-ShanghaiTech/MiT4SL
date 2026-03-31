@@ -279,7 +279,7 @@ If you find MiT4SL useful in your research, please consider citing:
 }
 ```
 
-If you have questions or encounter reproducibility issues, please feel free to contact us:
+If you have questions, please feel free to contact us:
 
 **Siyu Tao**: [taosy2022@shanghaitech.edu.cn](mailto:taosy2022@shanghaitech.edu.cn)
 
