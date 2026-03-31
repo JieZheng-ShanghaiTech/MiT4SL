@@ -68,6 +68,7 @@ pip install -r requirements.txt
 ```
 
 📌 **Note: Install PyTorch Geometric-related wheels manually**
+
 If the default installation does not resolve the PyTorch Geometric stack correctly on your machine, install the PyTorch Geometric-related extensions against your local PyTorch/CUDA build. For example, for **PyTorch 1.12.1 + CUDA 11.3**:
 
 ```bash
