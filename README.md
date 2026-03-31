@@ -1,9 +1,9 @@
-<div align="center">
 
 # MiT4SL: Context-aware deep learning enables adaptive synthetic lethality prediction across cancer cell lines
 
 We introduce MiT4SL, a context-aware representation learning framework that achieves accurate synthetic lethality (SL) prediction on seen cell lines while generalizing effectively to unseen ones. MiT4SL represents biological contexts as learnable embeddings and jointly encodes them with gene pair representations. The resulting contextualized triplet embeddings capture both shared and cell-line-specific mechanisms, enabling context-adaptive SL prediction.
 
+<div align="center">
 [![Python](https://img.shields.io/badge/Python-3.10-blue?logo=python&logoColor=white)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
 [![Paper](https://img.shields.io/badge/Paper-Coming%20Soon-orange)]()
@@ -279,5 +279,6 @@ If you find MiT4SL useful in your research, please consider citing:
 }
 ```
 If you have questions or encounter reproducibility issues, please feel free to contact us:
+
 **Siyu Tao**: [taosy2022@shanghaitech.edu.cn](mailto:taosy2022@shanghaitech.edu.cn)
 **Jie Zheng** (corresponding author): [zhengjie@shanghaitech.edu.cn](mailto:zhengjie@shanghaitech.edu.cn)
