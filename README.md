@@ -4,23 +4,19 @@
 
 [![Python](https://img.shields.io/badge/Python-3.10-blue?logo=python&logoColor=white)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
-[![Paper](https://img.shields.io/badge/Paper-Coming%20Soon-orange)]()
+[![bioRxiv](https://img.shields.io/badge/bioRxiv-2025.04.20.649694-orange.svg)](https://doi.org/10.1101/2025.04.20.649694)
 
 [Paper](https://doi.org/10.1101/2025.04.20.649694) | [Data](https://drive.google.com/drive/folders/1EPKHnXkcFEGLc_YbRMdzzTNojFVq1NJh?dmr=1&ec=wgc-drive-%5Bmodule%5D-goto) | [GitHub](https://github.com/JieZheng-ShanghaiTech/MiT4SL)
 
 </div>
 
-
-
-## Overview 
+## Overview
 
 ![MiT4SL overview](fig_overview_mit4sl.png)
 
-**Overview of MiT4SL.** MiT4SL is designed to predict SL interactions across diverse contexts, ranging from well-characterized to unexplored cell lines. To address data sparsity and context-specificity, MiT4SL incorporates cell-line-specific information with effective gene-pair representations. This flexible framework achieves superior performance in both established and unseen cell lines. Beyond its predictive accuracy, the versatility of the triplet representation allows MiT4SL to serve diverse roles. For example, it can identify novel SL partners for a target gene or prioritize optimal cellular contexts for specific gene-pair interactions. 
-
+**Overview of MiT4SL.** MiT4SL is designed to predict SL interactions across diverse contexts, ranging from well-characterized to unexplored cell lines. To address data sparsity and context-specificity, MiT4SL incorporates cell-line-specific information with effective gene-pair representations. This flexible framework achieves superior performance in both established and unseen cell lines. Beyond its predictive accuracy, the versatility of the triplet representation allows MiT4SL to serve diverse roles. For example, it can identify novel SL partners for a target gene or prioritize optimal cellular contexts for specific gene-pair interactions.
 
 ---
-
 
 ## Table of Contents
 
@@ -34,7 +30,6 @@
 ---
 
 ## 1. Installation
-
 
 ### Create a new environment
 
@@ -59,6 +54,7 @@ Please upgrade packaging tools first:
 python -m pip install --upgrade pip setuptools
 
 ```
+
 Then install the package in editable mode:
 
 ```bash
@@ -71,15 +67,15 @@ pip install -e .
 pip install -r requirements.txt
 ```
 
-
-:pushpin: **Note: Install PyTorch Geometric-related wheels manually**
+📌 **Note: Install PyTorch Geometric-related wheels manually**
 If the default installation does not resolve the PyTorch Geometric stack correctly on your machine, install the PyTorch Geometric-related extensions against your local PyTorch/CUDA build. For example, for **PyTorch 1.12.1 + CUDA 11.3**:
+
 ```bash
 pip install torch-scatter==2.1.0 torch-sparse==0.6.16 -f https://data.pyg.org/whl/torch-1.12.1+cu113.html
 pip install torch-geometric==1.6.0
 ```
-> Browse [data.pyg.org/whl](https://data.pyg.org/whl/) for other CUDA/PyTorch combinations. Adjust the `--find-links` URL to match your installed PyTorch/CUDA version.
 
+> Browse [data.pyg.org/whl](https://data.pyg.org/whl/) for other CUDA/PyTorch combinations. Adjust the `--find-links` URL to match your installed PyTorch/CUDA version.
 
 ## 2. Download data
 
@@ -100,16 +96,15 @@ data/
 
  The main dataset resources are organized as follows:
 
-  | Folder | Contents |
-  |---|---|
-  | `MultiOmics_feature/` | PrimeKG-derived graph assets, protein sequence embeddings, and cell-line-specific PPI features |
-  | `SLbench/` | Benchmark splits for specific-cell-line and cross-cell-line SL prediction |
-  | `SL_partner_recommendation/` | Partner recommendation tasks such as `A549_KRAS` and `A549_TP53` |
-  | `Cell_line_recommendation/` | Recommendation benchmarks for the `Dede` and `Ito` collections |
-  | `Case_study_TE1/` | TE-1 case-study data |
+| Folder                         | Contents                                                                                       |
+| ------------------------------ | ---------------------------------------------------------------------------------------------- |
+| `MultiOmics_feature/`        | PrimeKG-derived graph assets, protein sequence embeddings, and cell-line-specific PPI features |
+| `SLbench/`                   | Benchmark splits for specific-cell-line and cross-cell-line SL prediction                      |
+| `SL_partner_recommendation/` | Partner recommendation tasks such as `A549_KRAS` and `A549_TP53`                           |
+| `Cell_line_recommendation/`  | Recommendation benchmarks for the `Dede` and `Ito` collections                             |
+| `Case_study_TE1/`            | TE-1 case-study data                                                                           |
 
-
-:bulb: Additional notes for selected datasets are available in:
+💡 Additional notes for selected datasets are available in:
 
 - `data/MultiOmics_feature/README.md`
 - `data/Cell_line_recommendation/README.md`
@@ -129,6 +124,7 @@ If you need to override the configured runtime device, add `--device <id>` (for 
 
 Optionally, inspect the default configuration files selected by the launcher and preview the full training command without
 starting the run:
+
 ```bash
 bash scripts/run_mit4sl.sh --dry-run
 ```
@@ -140,7 +136,6 @@ python src/train_MiT4SL.py \
   --cfg configs/cross_cell_line/protocol.yaml \
   --cfg configs/cross_cell_line/Multi_5_to_A549.yaml
 ```
-
 
 ### List available targets for a config set
 
@@ -183,7 +178,9 @@ python src/train_MiT4SL.py \
   --cfg <protocol.yaml> \
   --cfg <target.yaml>
 ```
+
 You can also override the output directory or runtime device:
+
 ```bash
 python src/train_MiT4SL.py \
   --cfg configs/cross_cell_line/protocol.yaml \
@@ -191,8 +188,6 @@ python src/train_MiT4SL.py \
   --device 0 \
   --Save_model_path result/custom_run
 ```
-
-
 
 ### Outputs
 
@@ -220,9 +215,7 @@ The main output files are:
 - `resolved_config.yaml`: the fully merged runtime config after combining `protocol.yaml` with the target-specific YAML.
 - `run_metadata.json`: structured metadata describing the resolved run, such as config files, repeat mode, selected learning rate, and effective epoch budget.
 
-
 ## 4. Configuration system
-
 
 MiT4SL uses a two-stage configuration pattern:
 
@@ -236,8 +229,6 @@ bash scripts/run_mit4sl.sh --config-dir cross_cell_line --target A549
 ```
 
 For the full configuration catalog and directory layout, see [`configs/README.md`](./configs/README.md).
-
-
 
 ## 5. Project Structure
 
@@ -255,15 +246,12 @@ MiT4SL/
 └── requirements.txt         # Pinned dependency list
 ```
 
-
 For readers who want to understand or rebuild the processed assets, see [`tutorials/README.md`](./tutorials/README.md) and the notebooks under `tutorials/`,
 including:
 
 - tutorials/contextualized_PPI_construction.ipynb
 - tutorials/cell_line_specific_scenario_construction.ipynb
 - tutorials/cross_cell_line_scenario_constrcution.ipynb
-
-
 
 ## 6. How to cite
 
@@ -278,6 +266,7 @@ If you find MiT4SL useful in your research, please consider citing:
   publisher={Cold Spring Harbor Laboratory}
 }
 ```
+
 If you have questions or encounter reproducibility issues, please feel free to contact us:
 
 **Siyu Tao**: [taosy2022@shanghaitech.edu.cn](mailto:taosy2022@shanghaitech.edu.cn)
