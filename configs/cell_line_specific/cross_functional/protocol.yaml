@@ -1,0 +1,48 @@
+EXPERIMENT:
+  NAME: 'MiT4SL'
+  SETTING: 'cell_line_specific'
+  REPEAT_MODE: 'seed_repeats'
+  NUM_RUNS: 5
+  SPLIT_INDEX: 0
+
+DATA:
+  TPM_THRESHOLD: 400
+
+OPTIM:
+  NAME: 'Adam'
+  LR: 2e-3
+  LR_SEARCH_SPACE: [2e-3]
+  BETA1: 0.9
+  BETA2: 0.999
+  EPS: 1e-8
+  WEIGHT_DECAY: 0.0
+
+LOSS:
+  LAMBDA1: 0.2
+  LAMBDA2: 0.2
+
+TRAIN:
+  BATCH_SIZE: 512
+  BATCH_POS_NEG_RATIO: 1
+  CELL_LINE_SPECIFIC_MAX_EPOCHS: 30
+  EARLY_STOPPING:
+    ENABLED: true
+    MONITOR: 'valid_auc'
+    PATIENCE: 5
+
+Cell_Line:
+  NUM_LAYERS: 12
+
+KG_SAMPLER:
+  SAMPLE_NODES: 512
+  SAMPLE_LAYERS: 8
+
+SOLVER:
+  DEVICE: 1
+  SCENARIO: 'cross_functional'
+  TASK_DATAPATH: './data/SLbench/Scenario/Cell_line_specific/Cross_functional'
+  TASK_CELL_TEMPLATE: '{cell}'
+  CELLNX_DATAPATH: './data/MultiOmics_feature/cell_line_data/protein_nx/{cell}_cell_lines_subgrph.pkl'
+  CELLPROTEIN_DATAPATH: './data/MultiOmics_feature/cell_line_data/protein_csv/{cell}_cell_lines_proteins.csv'
+  REPEAT_EXP_SEED: 42
+  MODEL_SEED: 1024

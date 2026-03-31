@@ -1,11 +1,13 @@
 import torch
 import torch.nn.functional as F
+# from ogb.nodeproppred import Evaluator, PygNodePropPredDataset
 from torch.nn import LayerNorm, Linear, ReLU
 from tqdm import tqdm
 from torch_geometric.loader import DataLoader
 from torch_geometric.nn import DeepGCNLayer, GENConv,HGTConv
 import pandas as pd
 import numpy as np
+from torch_geometric.explain import Explainer, GNNExplainer
 
 class MiT4SL(torch.nn.Module):
     def __init__(self,kgdata,cell_ppidata,proteinseq_data,cell_line_proteins,
@@ -29,12 +31,31 @@ class MiT4SL(torch.nn.Module):
         self.cn_protein=cn_protein
         self.device=device
         self.linear_combine=torch.nn.Linear(2*self.emb_dim,2*self.emb_dim).to(device)
-        self.Linear_classifier_both=torch.nn.Sequential(torch.nn.Linear(self.emb_dim*6,4*self.emb_dim),torch.nn.ReLU(),torch.nn.Linear(4*self.emb_dim,2*self.emb_dim),torch.nn.ReLU(),torch.nn.Linear(2*self.emb_dim,2)).to(device)
+        
+        
+        #self.Linear_classifier_both=torch.nn.Sequential(torch.nn.Linear(self.emb_dim*6,4*self.emb_dim),torch.nn.ReLU(),torch.nn.Linear(4*self.emb_dim,2*self.emb_dim),torch.nn.ReLU(),torch.nn.Linear(2*self.emb_dim,2)).to(device)
+        self.Linear_classifier_both = torch.nn.Sequential(
+                            torch.nn.Linear(self.emb_dim * 6, 4 * self.emb_dim),
+                            torch.nn.ReLU(),
+                            torch.nn.Dropout(0.5),  
+                            torch.nn.Linear(4 * self.emb_dim, 2 * self.emb_dim),
+                            torch.nn.ReLU(),
+                            torch.nn.Dropout(0.3), 
+                            torch.nn.Linear(2*self.emb_dim, 2)
+                        ).to(device)
+        
+        
         self.Linear_classifier_both_ablation=torch.nn.Sequential(torch.nn.Linear(self.emb_dim*5,self.emb_dim),torch.nn.ReLU(),torch.nn.Linear(self.emb_dim,2)).to(device)
         self.Linear_classifier_nocell=torch.nn.Sequential(torch.nn.Linear(self.emb_dim*4,self.emb_dim),torch.nn.ReLU(),torch.nn.Linear(self.emb_dim,2)).to(device)
         self.Linear_classifier_singleall=torch.nn.Sequential(torch.nn.Linear(self.emb_dim*4,self.emb_dim),torch.nn.ReLU(),torch.nn.Linear(self.emb_dim,2)).to(device)
         self.Linear_classifier_singleseq=torch.nn.Sequential(torch.nn.Linear(self.emb_dim*5,self.emb_dim),torch.nn.ReLU(),torch.nn.Linear(self.emb_dim,2)).to(device)
-        self.Linear_classifier_single=torch.nn.Sequential(torch.nn.Linear(self.emb_dim*4,self.emb_dim),torch.nn.ReLU(),torch.nn.Linear(self.emb_dim,2)).to(device)
+        
+        self.Linear_classifier_single=torch.nn.Sequential(torch.nn.Linear(self.emb_dim*4,self.emb_dim),
+                                                          torch.nn.ReLU(),
+                                                          torch.nn.Linear(self.emb_dim,2)).to(device)
+        
+        
+        
         self.Linear_classifier_single_ablation=torch.nn.Sequential(torch.nn.Linear(self.emb_dim*3,self.emb_dim),torch.nn.ReLU(),torch.nn.Linear(self.emb_dim,2)).to(device)
         self.Linear_classifier_single_ablationcell=torch.nn.Sequential(torch.nn.Linear(self.emb_dim*2,self.emb_dim),torch.nn.ReLU(),torch.nn.Linear(self.emb_dim,2)).to(device)
         self.Linear_classifier_omics=torch.nn.Sequential(torch.nn.Linear(self.emb_dim*6,self.emb_dim),torch.nn.ReLU(),torch.nn.Linear(self.emb_dim,2)).to(device)
@@ -45,7 +66,7 @@ class MiT4SL(torch.nn.Module):
         else:
             print('Do not use KG encoder.')
         if Use_cellnx:
-            self.CellGraph_encoder=CellLineGraphEncoder(cell_ppidata,CellLineGraph_hidden_channels,self.emb_dim,CellLineGraph_num_layers).to(device)  
+            self.CellGraph_encoder=CellLineGraphEncoder(cell_ppidata,CellLineGraph_hidden_channels,CellLineGraph_num_layers,self.emb_dim).to(device)  
         else:
             print('Do not use CellGraph encoder.')
         if Use_seq:

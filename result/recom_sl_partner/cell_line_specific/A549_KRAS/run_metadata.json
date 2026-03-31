@@ -1,0 +1,32 @@
+{
+  "config_files": [
+    "/home/siyutao/SL/Github_project/MiT4SL_nature_final/configs/recom_sl_partner/protocol.yaml",
+    "/home/siyutao/SL/Github_project/MiT4SL_nature_final/configs/recom_sl_partner/A549_KRAS.yaml"
+  ],
+  "experiment_setting": "cell_line_specific",
+  "repeat_mode": "seed_repeats",
+  "num_runs": 5,
+  "split_index": 0,
+  "source_train_size": 1054,
+  "size_bucket": "fixed",
+  "task_cell_template": "{cell}",
+  "resolved_task_cell": "A549_KRAS",
+  "cross_cell_line_policy": "by_train_size",
+  "cross_cell_line_train_size_threshold": 5800,
+  "effective_max_epochs": 61,
+  "lr_search_space": [
+    "5e-4"
+  ],
+  "lr_presets": [
+    "5e-4"
+  ],
+  "selected_lr": 0.0005,
+  "batch_size": 512,
+  "device": 0,
+  "tpm_threshold": 400,
+  "recommendation_topk": [
+    5,
+    10,
+    20
+  ]
+}

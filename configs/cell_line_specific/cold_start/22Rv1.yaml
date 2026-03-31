@@ -1,0 +1,4 @@
+SOLVER:
+  CELL: '22Rv1'
+  CELLNX_DATAPATH: './data/MultiOmics_feature/cell_line_data/protein_nx/22RV1_cell_lines_subgrph.pkl'
+  CELLPROTEIN_DATAPATH: './data/MultiOmics_feature/cell_line_data/protein_csv/22RV1_cell_lines_proteins.csv'

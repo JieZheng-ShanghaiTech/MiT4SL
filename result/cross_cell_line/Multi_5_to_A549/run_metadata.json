@@ -1,0 +1,41 @@
+{
+  "config_files": [
+    "/home/siyutao/SL/Github_project/MiT4SL_nature_final/configs/cross_cell_line/protocol.yaml",
+    "/home/siyutao/SL/Github_project/MiT4SL_nature_final/configs/cross_cell_line/Multi_5_to_A549.yaml"
+  ],
+  "experiment_setting": "cross_cell_line",
+  "repeat_mode": "seed_repeats",
+  "num_runs": 5,
+  "split_index": 0,
+  "source_train_size": 5829,
+  "size_bucket": "large",
+  "task_cell_template": "{cell}",
+  "resolved_task_cell": "Multi_5_to_A549",
+  "cross_cell_line_policy": "by_train_size",
+  "cross_cell_line_train_size_threshold": 5800,
+  "effective_max_epochs": 20,
+  "lr_search_space": [
+    "1e-3",
+    "3e-3"
+  ],
+  "lr_presets": [
+    "1e-3",
+    "3e-3"
+  ],
+  "selected_lr": 0.001,
+  "batch_size": 512,
+  "device": 1,
+  "tpm_threshold": 400,
+  "cross_cell_line_presets": {
+    "large": {
+      "source_train_size_min": 5800,
+      "effective_lr": 0.001,
+      "effective_max_epochs": 20
+    },
+    "small": {
+      "source_train_size_max": 5799,
+      "effective_lr": 0.003,
+      "effective_max_epochs": 120
+    }
+  }
+}

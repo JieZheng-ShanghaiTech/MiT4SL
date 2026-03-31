@@ -1,0 +1,32 @@
+{
+  "config_files": [
+    "/home/siyutao/SL/Github_project/MiT4SL_nature_final/configs/recom_sl_cell_line/dede/protocol.yaml",
+    "/home/siyutao/SL/Github_project/MiT4SL_nature_final/configs/recom_sl_cell_line/dede/A549.yaml"
+  ],
+  "experiment_setting": "cell_line_specific",
+  "repeat_mode": "seed_repeats",
+  "num_runs": 1,
+  "split_index": 0,
+  "source_train_size": 5829,
+  "size_bucket": "fixed",
+  "task_cell_template": "{cell}",
+  "resolved_task_cell": "A549",
+  "cross_cell_line_policy": "by_train_size",
+  "cross_cell_line_train_size_threshold": 5800,
+  "effective_max_epochs": 60,
+  "lr_search_space": [
+    "2e-3"
+  ],
+  "lr_presets": [
+    "2e-3"
+  ],
+  "selected_lr": 0.002,
+  "batch_size": 512,
+  "device": 1,
+  "tpm_threshold": 400,
+  "recommendation_topk": [
+    5,
+    10,
+    20
+  ]
+}

@@ -1,0 +1,4 @@
+SOLVER:
+  CELL: 'Multi_5_to_A375'
+  REPEAT_EXP_SEED: 0
+  MODEL_SEED: 1029

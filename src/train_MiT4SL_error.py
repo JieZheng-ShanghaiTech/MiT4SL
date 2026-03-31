@@ -240,36 +240,36 @@ def inspect_reference_source_train_size(cfg, node_type_dict):
 
 
 
+def resolve_negative_sampling_seed(cfg, epoch, sample_seed):
+    if int(cfg.SOLVER.NEGATIVE_SAMPLING_SEED_BASE) >= 0:
+        return epoch + int(cfg.SOLVER.NEGATIVE_SAMPLING_SEED_BASE)
+    return epoch + sample_seed + cfg.SOLVER.REPEAT_EXP_SEED
+
+
+
 def build_balanced_training_pairs(cfg, epoch, sample_seed, sldata, ori_train_data):
-    """Match the legacy MiT4SL_RECOMB negative-sampling logic exactly."""
-    del sample_seed
-
-    batch_sl = sldata[sldata[3] == 1]
-    batch_nosl = sldata[sldata[3] == 0]
-    batch_nosl.reset_index(drop=True, inplace=True)
-
-    ori_batch_sl = ori_train_data[ori_train_data[3] == 1]
-    ori_batch_nosl = ori_train_data[ori_train_data[3] == 0]
+    batch_sl = sldata[sldata[3] == 1].reset_index(drop=True)
+    batch_nosl = sldata[sldata[3] == 0].reset_index(drop=True)
+    ori_batch_sl = ori_train_data[ori_train_data[3] == 1].reset_index(drop=True)
+    ori_batch_nosl = ori_train_data[ori_train_data[3] == 0].reset_index(drop=True)
 
     if batch_sl.empty or batch_nosl.empty:
         raise ValueError('Training data must contain both positive and negative SL pairs.')
 
-    nosl_idx = list(range(batch_nosl.shape[0]))
-    np.random.seed(epoch + cfg.SOLVER.REPEAT_EXP_SEED)
-    np.random.shuffle(nosl_idx)
-    sampled_idx = np.random.choice(
-        nosl_idx,
+    rng = np.random.default_rng(resolve_negative_sampling_seed(cfg, epoch, sample_seed))
+    sampled_idx = rng.choice(
+        batch_nosl.index.to_numpy(),
         size=batch_sl.shape[0] * cfg.TRAIN.BATCH_POS_NEG_RATIO,
         replace=True,
     )
 
-    balanced_sldata = pd.concat([batch_sl, batch_nosl.iloc[sampled_idx, :]], axis=0)
-    balanced_sldata.reset_index(drop=True, inplace=True)
+    sampled_sldata = pd.concat([batch_sl, batch_nosl.iloc[sampled_idx]], axis=0).reset_index(drop=True)
+    sampled_ori_data = pd.concat([ori_batch_sl, ori_batch_nosl.iloc[sampled_idx]], axis=0).reset_index(drop=True)
 
-    ori_batch_nosl = ori_batch_nosl.iloc[sampled_idx, :]
-    balanced_ori_data = pd.concat([ori_batch_sl, ori_batch_nosl], axis=0)
-    balanced_ori_data.reset_index(drop=True, inplace=True)
-    return balanced_sldata, balanced_ori_data
+    permutation = rng.permutation(sampled_sldata.shape[0])
+    sampled_sldata = sampled_sldata.iloc[permutation].reset_index(drop=True)
+    sampled_ori_data = sampled_ori_data.iloc[permutation].reset_index(drop=True)
+    return sampled_sldata, sampled_ori_data
 
 
 

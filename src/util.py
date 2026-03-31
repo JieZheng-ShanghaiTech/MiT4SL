@@ -7,10 +7,13 @@ import logging
 import os
 import pickle
 from torch_geometric.loader import HGTLoader
-from sklearn.metrics import roc_auc_score,balanced_accuracy_score,average_precision_score
+from sklearn.metrics import roc_auc_score,f1_score,precision_recall_curve,cohen_kappa_score,balanced_accuracy_score,precision_score,accuracy_score,recall_score,average_precision_score
 
 
-def Downstream_data_preprocess_cell(Task_data_path,Cell,node_type_dict):
+RECOMMENDATION_TOPK = (5, 10, 20)
+
+
+def Downstream_data_preprocess_cell(Task_data_path,Cell,node_type_dict,split_index=0):
     """
     Preprocesses training, validation, and test data for SL prediction task.
 
@@ -26,8 +29,8 @@ def Downstream_data_preprocess_cell(Task_data_path,Cell,node_type_dict):
     """
 
     # Load train and test data from CSV files
-    train_data=pd.read_csv(f"{Task_data_path}/{Cell}/sl_train_0.csv")
-    test_data=pd.read_csv(f'{Task_data_path}/{Cell}/sl_test_0.csv')
+    train_data=pd.read_csv(f"{Task_data_path}/{Cell}/sl_train_{split_index}.csv")
+    test_data=pd.read_csv(f'{Task_data_path}/{Cell}/sl_test_{split_index}.csv')
     # Split training data into train and validation sets (90% train, 10% validate)
     all_idx=list(range(len(train_data)))
     random.seed(0)  
@@ -159,21 +162,133 @@ def set_logger(args):
     console.setFormatter(formatter) 
     logging.getLogger('').addHandler(console) 
 
-
+def log_metrics(mode, step, metrics):
+    '''
+    Print the evaluation logs
+    '''
+    for metric in metrics:
+        logging.info('%s %s at epoch %d: %f' % (mode,metric,step, metrics[metric]))
 
 
 def compute_accuracy(target,pred, pred_edge):
-    
-    target=target.clone().detach().cpu().numpy()
-    pred=pred.clone().detach().cpu().numpy()
-    pred_edge=pred_edge.clone().detach().cpu()
-    scores = torch.softmax(pred_edge, 1).numpy()
-    target=target.astype(int)
-   
-    aucu=roc_auc_score(target,scores[:,1])
-    aupr=average_precision_score(target, scores[:,1])
-    bacc=balanced_accuracy_score(target,pred)
-    return aucu,aupr,bacc
+    metrics = compute_classification_metrics(target, pred, pred_edge)
+    return metrics.get('auc', np.nan), metrics.get('aupr', np.nan), metrics['bacc']
+
+
+def _to_numpy(values):
+    if isinstance(values, torch.Tensor):
+        return values.detach().cpu().numpy()
+    return np.asarray(values)
+
+
+def extract_positive_class_scores(pred_edge):
+    pred_edge = pred_edge.clone().detach().cpu()
+    return torch.softmax(pred_edge, dim=1)[:, 1].numpy()
+
+
+def is_binary_label_vector(target):
+    target = _to_numpy(target).astype(float)
+    if target.size == 0:
+        return False
+    unique_values = np.unique(target)
+    return np.all(np.isin(unique_values, [0.0, 1.0]))
+
+
+def compute_classification_metrics(target, pred, pred_edge):
+    target = _to_numpy(target).astype(int)
+    pred = _to_numpy(pred).astype(int)
+    positive_scores = extract_positive_class_scores(pred_edge)
+
+    metrics = {}
+    if np.unique(target).size > 1:
+        metrics['auc'] = roc_auc_score(target, positive_scores)
+        metrics['aupr'] = average_precision_score(target, positive_scores)
+    metrics['bacc'] = balanced_accuracy_score(target, pred)
+    return metrics
+
+
+def compute_split_metrics(
+    target,
+    pred_edge,
+    include_classification_metrics=True,
+    include_recommendation_metrics=False,
+):
+    target_array = _to_numpy(target)
+    pred_edge_tensor = pred_edge.detach().cpu() if isinstance(pred_edge, torch.Tensor) else torch.as_tensor(pred_edge)
+
+    metrics = {}
+    if include_classification_metrics and is_binary_label_vector(target_array):
+        binary_target = target_array.astype(int)
+        if np.unique(binary_target).size > 1:
+            binary_pred = torch.max(pred_edge_tensor, dim=1)[1].numpy()
+            metrics.update(compute_classification_metrics(binary_target, binary_pred, pred_edge_tensor))
+
+    if include_recommendation_metrics:
+        positive_scores = extract_positive_class_scores(pred_edge_tensor)
+        metrics.update(compute_recommendation_metrics(target_array, positive_scores))
+
+    if not metrics:
+        raise ValueError('No compatible evaluation metrics were produced for this split.')
+    return metrics
+
+
+def _recommendation_relevance_from_target(target):
+    target = _to_numpy(target).astype(float)
+    if is_binary_label_vector(target):
+        # Binary recommendation tasks (for example SL partner recommendation)
+        # already encode relevance directly in {0, 1}.
+        relevance = target.clip(min=0.0)
+        binary_relevance = target > 0
+    else:
+        # Continuous recommendation files (for example Dede/Ito) store deltaMean
+        # scores where more negative values indicate stronger synthetic lethality.
+        relevance = np.maximum(-target, 0.0)
+        binary_relevance = target < 0
+    return relevance, binary_relevance.astype(float)
+
+
+def _discount_factors(length):
+    return np.log2(np.arange(2, length + 2))
+
+
+def _dcg_at_k(relevance, k):
+    if k <= 0:
+        return 0.0
+    top_relevance = np.asarray(relevance[:k], dtype=float)
+    if top_relevance.size == 0:
+        return 0.0
+    gains = np.power(2.0, top_relevance) - 1.0
+    return float(np.sum(gains / _discount_factors(top_relevance.size)))
+
+
+def compute_recommendation_metrics(target, positive_scores, topk_values=RECOMMENDATION_TOPK):
+    target = _to_numpy(target).astype(float)
+    positive_scores = _to_numpy(positive_scores).astype(float)
+    if target.shape[0] != positive_scores.shape[0]:
+        raise ValueError(
+            f'Target size ({target.shape[0]}) and score size ({positive_scores.shape[0]}) must match.'
+        )
+
+    relevance, binary_relevance = _recommendation_relevance_from_target(target)
+    ranked_indices = np.argsort(-positive_scores, kind='stable')
+    ranked_relevance = relevance[ranked_indices]
+    ranked_binary = binary_relevance[ranked_indices]
+    ideal_relevance = np.sort(relevance)[::-1]
+
+    metrics = {}
+    for topk in topk_values:
+        effective_k = min(int(topk), ranked_relevance.shape[0])
+        if effective_k <= 0:
+            metrics[f'ndcg_{topk}'] = 0.0
+            metrics[f'precision_{topk}'] = 0.0
+            continue
+
+        dcg = _dcg_at_k(ranked_relevance, effective_k)
+        idcg = _dcg_at_k(ideal_relevance, effective_k)
+        metrics[f'ndcg_{topk}'] = float(dcg / idcg) if idcg > 0 else 0.0
+        metrics[f'precision_{topk}'] = float(np.mean(ranked_binary[:effective_k]))
+
+    return metrics
 
 
 
@@ -215,13 +330,13 @@ def init_graph_data(KG_DATAPATH,CELLNX_DATAPATH):
 
 
 
-def overlapping_with_sequence(PROTEINSeq_DATAPATH,CELLPROTEIN_DATAPATH,Task_data_path,cell):
+def overlapping_with_sequence(PROTEINSeq_DATAPATH,CELLPROTEIN_DATAPATH,Task_data_path,cell,split_index=0):
     with open(PROTEINSeq_DATAPATH,'rb') as f:
         proteinseq_data=pickle.load(f)
 
     cell_line_proteins=pd.read_csv(CELLPROTEIN_DATAPATH)
-    train_data=pd.read_csv(f'{Task_data_path}/{cell}/sl_train_0.csv')
-    test_data=pd.read_csv(f'{Task_data_path}/{cell}/sl_test_0.csv')
+    train_data=pd.read_csv(f'{Task_data_path}/{cell}/sl_train_{split_index}.csv')
+    test_data=pd.read_csv(f'{Task_data_path}/{cell}/sl_test_{split_index}.csv')
     train_node=set(train_data['0'])|set(train_data['1'])
     test_node=set(test_data['0'])|set(test_data['1'])
     slnode=train_node|test_node
@@ -233,4 +348,3 @@ def overlapping_with_sequence(PROTEINSeq_DATAPATH,CELLPROTEIN_DATAPATH,Task_data
     
     del proteinseq_data,train_data,test_data
     return new_proteinseq_data,cell_line_proteins
-

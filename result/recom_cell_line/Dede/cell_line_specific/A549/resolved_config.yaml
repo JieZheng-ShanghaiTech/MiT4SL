@@ -1,0 +1,89 @@
+Cell_Line:
+  EMB_DIM: 64
+  HIDDEN_DIM: 64
+  NUM_LAYERS: 64
+  USE_Cell: true
+DATA:
+  TPM_THRESHOLD: 400
+EXPERIMENT:
+  NAME: MiT4SL
+  NUM_RUNS: 1
+  REPEAT_MODE: seed_repeats
+  SETTING: cell_line_specific
+  SPLIT_INDEX: 0
+KG:
+  EMB_DIM: 64
+  HIDEEN_DIM: 64
+  NAME: PrimeKG
+  NUM_HEADS: 4
+  NUM_LAYERS: 3
+  USE_KG: true
+KG_SAMPLER:
+  SAMPLE_LAYERS: 8
+  SAMPLE_NODES: 512
+LOSS:
+  LAMBDA1: 0.2
+  LAMBDA2: 0.2
+MLP:
+  DL_PREDICTOR:
+    HIDDEN_DIM: 64
+    INPUT_DIM: 256
+    OUT_DIM: 2
+  SL_PREDICTOR:
+    HIDDEN_DIM: 64
+    INPUT_DIM: 384
+    OUT_DIM: 2
+OPTIM:
+  BETA1: 0.9
+  BETA2: 0.999
+  CROSS_CELL_LINE_LARGE_LR: 0.001
+  CROSS_CELL_LINE_SMALL_LR: 0.003
+  EPS: 1.0e-08
+  LR: 0.002
+  LR_SEARCH_SPACE:
+  - 2e-3
+  NAME: Adam
+  WEIGHT_DECAY: 0.0
+ProteinSeq:
+  HIDDEN_DIM: 640
+  NAME: ESM2
+  OUT_DIM: 64
+  USE_Seq: true
+RESULT:
+  LOG_STEPS: 1
+  SAVE_CHEACKPOINTS_STEP: 5
+  SAVE_MODEL: true
+  SAVE_PATH: /home/siyutao/SL/Github_project/MiT4SL_nature_final/result/recom_cell_line/Dede
+SCHEDULER:
+  GAMMA: 0.1
+  STEP_SIZE: 5
+  USE_SCHEDULER: true
+SOLVER:
+  CELL: A549
+  CELLNX_DATAPATH: /home/siyutao/SL/Github_project/MiT4SL_nature_final/data/Cell_line_recommendation/Dede/A549/Multi_6_A549_subgraph.pkl
+  CELLPROTEIN_DATAPATH: /home/siyutao/SL/Github_project/MiT4SL_nature_final/data/Cell_line_recommendation/Dede/A549/Multi_6_A549_proteins.csv
+  DEVICE: 1
+  KG_DATAPATH: /home/siyutao/SL/Github_project/MiT4SL_nature_final/data/MultiOmics_feature/kg_data/kgdata.pkl
+  KG_NODE_DICT: /home/siyutao/SL/Github_project/MiT4SL_nature_final/data/MultiOmics_feature/kg_data/node_index_dic.json
+  MODEL_SEED: 0
+  NEGATIVE_SAMPLING_SEED_BASE: 42
+  NODE_TYPE: gene/protein
+  NUM_WORKERS: 16
+  PROTEINSeq_DATAPATH: /home/siyutao/SL/Github_project/MiT4SL_nature_final/data/MultiOmics_feature/seq_data/protein_sequence_embedding.pkl
+  REPEAT_EXP_SEED: 42
+  SCENARIO: recom_cell_line_dede
+  TASK_CELL_TEMPLATE: '{cell}'
+  TASK_DATAPATH: /home/siyutao/SL/Github_project/MiT4SL_nature_final/data/Cell_line_recommendation/Dede
+  USE_DATA: KG_Seq_Cell_Line
+TRAIN:
+  BATCH_POS_NEG_RATIO: 1
+  BATCH_SIZE: 512
+  CELL_LINE_SPECIFIC_MAX_EPOCHS: 60
+  CROSS_CELL_LINE_LARGE_MAX_EPOCHS: 20
+  CROSS_CELL_LINE_POLICY: by_train_size
+  CROSS_CELL_LINE_SMALL_MAX_EPOCHS: 120
+  CROSS_CELL_LINE_TRAIN_SIZE_THRESHOLD: 5800
+  EARLY_STOPPING:
+    ENABLED: false
+    MONITOR: valid_auc
+    PATIENCE: 5
