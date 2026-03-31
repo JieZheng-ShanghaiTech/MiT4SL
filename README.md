@@ -1,16 +1,27 @@
 
 # MiT4SL: Context-aware deep learning enables adaptive synthetic lethality prediction across cancer cell lines
 
-We introduce MiT4SL, a context-aware representation learning framework that achieves accurate synthetic lethality (SL) prediction on seen cell lines while generalizing effectively to unseen ones. MiT4SL represents biological contexts as learnable embeddings and jointly encodes them with gene pair representations. The resulting contextualized triplet embeddings capture both shared and cell-line-specific mechanisms, enabling context-adaptive SL prediction.
+We introduce MiT4SL, a context-aware representation learning framework that achieves accurate synthetic lethality (SL) prediction on seen cell lines while generalizing effectively to unseen ones. MiT4SL represents biological contexts as learnable embeddings and jointly encodes them with gene-pair representations. The resulting contextualized triplet embeddings capture both shared and cell-line-specific mechanisms, enabling context-adaptive SL prediction.
 
-<div align="center">
-[![Python](https://img.shields.io/badge/Python-3.10-blue?logo=python&logoColor=white)](https://www.python.org/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
-[![Paper](https://img.shields.io/badge/Paper-Coming%20Soon-orange)]()
+  <p align="center">
+    <a href="https://www.python.org/">
+      <img src="https://img.shields.io/badge/Python-3.10-blue?logo=python&logoColor=white" />
+    </a>
+    <a href="https://opensource.org/licenses/MIT">
+      <img src="https://img.shields.io/badge/License-MIT-green.svg" />
+    </a>
+    <a href="https://doi.org/10.1101/2025.04.20.649694">
+      <img src="https://img.shields.io/badge/Paper-Coming%20Soon-orange" />
+    </a>
+  </p>
 
-[Paper](https://doi.org/10.1101/2025.04.20.649694) | [Data](https://drive.google.com/drive/folders/1EPKHnXkcFEGLc_YbRMdzzTNojFVq1NJh?dmr=1&ec=wgc-drive-%5Bmodule%5D-goto) | [GitHub](https://github.com/JieZheng-ShanghaiTech/MiT4SL)
+  <p align="center">
+    <a href="https://doi.org/10.1101/2025.04.20.649694">Paper</a> |
+    <a href="https://drive.google.com/drive/folders/1EPKHnXkcFEGLc_YbRMdzzTNojFVq1NJh?
+  dmr=1&ec=wgc-drive-%5Bmodule%5D-goto">Data</a> |
+    <a href="https://github.com/JieZheng-ShanghaiTech/MiT4SL">GitHub</a>
+  </p>
 
-</div>
 
 ## Overview 
 
