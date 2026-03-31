@@ -79,9 +79,9 @@ pip install torch-geometric==1.6.0
 
 ## 2. Download data
 
-Due to data size and availability restrictions, the target dataset must be manually downloaded. You can access it from the dataset URL: [Dataset](https://drive.google.com/drive/folders/1EPKHnXkcFEGLc_YbRMdzzTNojFVq1NJh?dmr=1&ec=wgc-drive-%5Bmodule%5D-goto). Make sure to download the dataset and place it in the appropriate directory `data` before running the program.
+Due to data size and availability restrictions, the target dataset must be manually downloaded. You can access it from the dataset URL: [Dataset](https://drive.google.com/drive/folders/1mVvm6yZTPhbjEXviYi5ZkXhMyqSrsj8C?usp=sharing). Make sure to download the dataset and place it in the appropriate directory `data` before running the program.
 
-**Step 1:** Download the [Dataset](https://drive.google.com/drive/folders/1EPKHnXkcFEGLc_YbRMdzzTNojFVq1NJh?dmr=1&ec=wgc-drive-%5Bmodule%5D-goto).
+**Step 1:** Download the [Dataset](https://drive.google.com/drive/folders/1mVvm6yZTPhbjEXviYi5ZkXhMyqSrsj8C?usp=sharing).
 
 **Step 2:** Place everything under `data/` at the project root. The expected layout is:
 
