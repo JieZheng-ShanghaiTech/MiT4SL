@@ -84,6 +84,17 @@ Due to data size and availability restrictions, the target dataset must be manua
 
 **Step 1:** Download the [Dataset](https://drive.google.com/drive/folders/1mVvm6yZTPhbjEXviYi5ZkXhMyqSrsj8C?usp=sharing).
 
+For the local archive package `data.zip`, the current release metadata is:
+
+| Field | Value |
+| --- | --- |
+| Archive name | `data.zip` |
+| Version | `v2026.03.31` |
+| Release date | `2026-03-31` |
+| File size | `1,030,474,683 bytes` |
+| Checksum | `SHA-256: d06124f2de3d6766f222c21800e91dcee10fb959c06a4cbf4189f1a3a9c791a8` |
+| License / usage notes | MIT |
+
 **Step 2:** Place everything under `data/` at the project root. The expected layout is:
 
 ```text
